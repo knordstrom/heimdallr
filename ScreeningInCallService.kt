@@ -11,6 +11,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import androidx.work.ExistingWorkPolicy
 import com.callscreener.data.ScreenedCall
 import com.callscreener.data.ScreenedCallRepository
 import com.callscreener.data.ScreeningDecision
@@ -132,18 +133,29 @@ class ScreeningInCallService : InCallService() {
     }
 
     private fun enqueueTranscription(callId: Long, audioPath: String) {
-        val work = OneTimeWorkRequestBuilder<TranscriptionWorker>()
+        val networkRequired = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val transcriptionWork = OneTimeWorkRequestBuilder<TranscriptionWorker>()
             .setInputData(workDataOf(
                 TranscriptionWorker.KEY_AUDIO_PATH to audioPath,
                 TranscriptionWorker.KEY_CALL_ID to callId
             ))
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
+            .setConstraints(networkRequired)
             .build()
-        WorkManager.getInstance(applicationContext).enqueue(work)
-        Log.d(TAG, "Transcription job enqueued for call $callId")
+
+        // ClassificationWorker receives call_id + transcript from TranscriptionWorker's
+        // output data via WorkManager's OverwritingInputMerger.
+        val classificationWork = OneTimeWorkRequestBuilder<ClassificationWorker>()
+            .setConstraints(networkRequired)
+            .build()
+
+        WorkManager.getInstance(applicationContext)
+            .beginUniqueWork("screening_$callId", ExistingWorkPolicy.KEEP, transcriptionWork)
+            .then(classificationWork)
+            .enqueue()
+
+        Log.d(TAG, "STT → Classification pipeline enqueued for call $callId")
     }
 }
