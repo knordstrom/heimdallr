@@ -55,6 +55,7 @@ class ScreenedCallRepository(context: Context) {
                 put("timestamp", call.timestamp)
                 put("transcript", call.transcript ?: JSONObject.NULL)
                 put("aiSummary", call.aiSummary ?: JSONObject.NULL)
+                put("audioFilePath", call.audioFilePath ?: JSONObject.NULL)
             }
             array.put(obj)
         }
@@ -73,7 +74,8 @@ class ScreenedCallRepository(context: Context) {
                     decision = ScreeningDecision.valueOf(obj.getString("decision")),
                     timestamp = obj.getLong("timestamp"),
                     transcript = obj.optString("transcript").ifBlank { null },
-                    aiSummary = obj.optString("aiSummary").ifBlank { null }
+                    aiSummary = obj.optString("aiSummary").ifBlank { null },
+                    audioFilePath = obj.optString("audioFilePath").ifBlank { null }
                 )
             }
         } catch (e: Exception) {

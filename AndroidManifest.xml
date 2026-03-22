@@ -26,8 +26,14 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--
-        Step 2+: needed for foreground service when audio answering is added.
-        Declared now so the manifest is ready; not used in Step 1.
+        Step 2+: microphone access for recording caller audio during screening.
+        Runtime-requested after the dialer role is granted.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+        Step 2+: needed to run ScreeningInCallService as a foreground service
+        with microphone access while a call is active.
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -60,6 +66,25 @@
             <meta-data
                 android:name="android.telecom"
                 android:resource="@xml/call_screening_service" />
+        </service>
+
+        <!-- =====================================================
+             ScreeningInCallService (Step 2+)
+             Answers calls flagged by CallScreenerService, plays a
+             TTS greeting, and records the caller's response.
+             Requires this app to be the default phone app (ROLE_DIALER).
+             BIND_IN_CALL_SERVICE ensures only the system can bind to it.
+             ===================================================== -->
+        <service
+            android:name=".service.ScreeningInCallService"
+            android:exported="true"
+            android:permission="android.permission.BIND_IN_CALL_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.InCallService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.telecom.IN_CALL_SERVICE_UI"
+                android:value="false" />
         </service>
 
         <!-- =====================================================

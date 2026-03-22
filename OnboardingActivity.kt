@@ -12,40 +12,59 @@ import androidx.activity.result.contract.ActivityResultContracts
 /**
  * OnboardingActivity
  *
- * Android requires the user to explicitly grant this app the
- * CALL_SCREENING role before CallScreenerService is invoked.
+ * Requests two roles that together enable full call screening with audio:
  *
- * This activity handles that flow on launch. Once granted, it
- * navigates to MainActivity and never shows again.
+ *   1. CALL_SCREENING — lets CallScreenerService intercept calls before they ring.
+ *   2. ROLE_DIALER (default phone app) — lets ScreeningInCallService answer calls
+ *      programmatically, play a TTS greeting, and record the caller's response.
+ *      Without this role, Android will not bind InCallService and the audio
+ *      screening step is skipped.
  *
- * API 29+ uses RoleManager (preferred).
- * API 28 falls back to TelecomManager.requestChangeDefaultCallScreeningApp().
+ * The roles are requested sequentially: screening first, then dialer.
+ * Navigation to MainActivity happens only after both are held.
+ *
+ * API 29+: RoleManager (preferred).
+ * API 28: TelecomManager fallback for both roles.
  */
 class OnboardingActivity : ComponentActivity() {
 
     private val tag = "OnboardingActivity"
 
-    private val roleRequestLauncher = registerForActivityResult(
+    // Step 1 of onboarding: CALL_SCREENING role
+    private val screeningRoleLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    ) {
         if (isCallScreeningRoleHeld()) {
-            Log.d(tag, "Call screening role granted")
-            navigateToMain()
+            Log.d(tag, "Call screening role granted — requesting dialer role")
+            requestDialerRole()
         } else {
-            Log.w(tag, "Call screening role denied — showing rationale")
+            Log.w(tag, "Call screening role denied")
             showRoleDeniedState()
         }
+    }
+
+    // Step 2 of onboarding: default dialer role (needed for InCallService / audio answering)
+    private val dialerRoleLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (isDialerRoleHeld()) {
+            Log.d(tag, "Dialer role granted")
+        } else {
+            // Non-fatal: call screening still works; audio answering (Step 2) won't.
+            Log.w(tag, "Dialer role denied — audio screening disabled")
+        }
+        // Proceed regardless; screening-only mode is better than blocking onboarding.
+        navigateToMain()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (isCallScreeningRoleHeld()) {
-            navigateToMain()
-            return
+        when {
+            !isCallScreeningRoleHeld() -> requestCallScreeningRole()
+            !isDialerRoleHeld() -> requestDialerRole()
+            else -> navigateToMain()
         }
-
-        requestCallScreeningRole()
     }
 
     // ---------------------------------------------------------------------------
@@ -54,27 +73,46 @@ class OnboardingActivity : ComponentActivity() {
 
     private fun isCallScreeningRoleHeld(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+            getSystemService(RoleManager::class.java)
+                .isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
         } else {
-            // API 28: check via TelecomManager
-            val telecom = getSystemService(TelecomManager::class.java)
-            telecom.callScreeningAppPackageName == packageName
+            getSystemService(TelecomManager::class.java)
+                .callScreeningAppPackageName == packageName
+        }
+    }
+
+    private fun isDialerRoleHeld(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getSystemService(RoleManager::class.java)
+                .isRoleHeld(RoleManager.ROLE_DIALER)
+        } else {
+            getSystemService(TelecomManager::class.java)
+                .defaultDialerPackage == packageName
         }
     }
 
     private fun requestCallScreeningRole() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-            roleRequestLauncher.launch(intent)
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getSystemService(RoleManager::class.java)
+                .createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
         } else {
-            // API 28 fallback — direct intent to system settings
-            val intent = Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+            Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
                 putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
             }
-            roleRequestLauncher.launch(intent)
         }
+        screeningRoleLauncher.launch(intent)
+    }
+
+    private fun requestDialerRole() {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getSystemService(RoleManager::class.java)
+                .createRequestRoleIntent(RoleManager.ROLE_DIALER)
+        } else {
+            Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
+            }
+        }
+        dialerRoleLauncher.launch(intent)
     }
 
     // ---------------------------------------------------------------------------
@@ -87,12 +125,10 @@ class OnboardingActivity : ComponentActivity() {
     }
 
     /**
-     * TODO: Replace with a proper Compose UI explaining why the permission is needed
-     * and offering a "Try Again" button that re-calls requestCallScreeningRole().
-     *
-     * For Step 1, just logging — the activity will appear blank if denied.
+     * TODO: Replace with a Compose UI that explains both permissions and provides
+     * "Try Again" buttons. For now the activity appears blank on denial.
      */
     private fun showRoleDeniedState() {
-        Log.w(tag, "Show rationale UI: explain why call screening is required")
+        Log.w(tag, "Show rationale UI: explain why call screening + dialer roles are required")
     }
 }

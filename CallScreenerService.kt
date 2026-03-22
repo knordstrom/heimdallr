@@ -7,6 +7,7 @@ import com.callscreener.data.BlocklistRepository
 import com.callscreener.data.ScreenedCall
 import com.callscreener.data.ScreenedCallRepository
 import com.callscreener.data.ScreeningDecision
+import com.callscreener.service.ScreeningStateManager
 
 /**
  * CallScreenerService
@@ -38,27 +39,47 @@ class CallScreenerService : CallScreeningService() {
 
         val decision = screenNumber(phoneNumber, callDetails)
 
-        // Persist for the user to review in the call history screen
-        screenedCallRepo.save(
-            ScreenedCall(
-                phoneNumber = phoneNumber,
-                decision = decision,
-                timestamp = System.currentTimeMillis(),
-                callerName = callDetails.callerDisplayName?.toString()
-            )
-        )
-
         when (decision) {
+            ScreeningDecision.SCREENING -> {
+                // ScreeningInCallService will answer, record, and save the final record.
+                Log.i(tag, "Flagging $phoneNumber for active screening")
+                ScreeningStateManager.markForScreening(phoneNumber)
+                allowCall(silenceRinger = true)
+            }
             ScreeningDecision.ALLOW -> {
                 Log.d(tag, "Allowing call from $phoneNumber")
-                allowCall()
+                screenedCallRepo.save(
+                    ScreenedCall(
+                        phoneNumber = phoneNumber,
+                        decision = decision,
+                        timestamp = System.currentTimeMillis(),
+                        callerName = callDetails.callerDisplayName?.toString()
+                    )
+                )
+                allowCall(silenceRinger = false)
             }
             ScreeningDecision.BLOCK_SILENTLY -> {
                 Log.d(tag, "Silently blocking call from $phoneNumber")
+                screenedCallRepo.save(
+                    ScreenedCall(
+                        phoneNumber = phoneNumber,
+                        decision = decision,
+                        timestamp = System.currentTimeMillis(),
+                        callerName = callDetails.callerDisplayName?.toString()
+                    )
+                )
                 blockCall(sendToVoicemail = false, showMissedCallNotification = false)
             }
             ScreeningDecision.SEND_TO_VOICEMAIL -> {
                 Log.d(tag, "Sending $phoneNumber to voicemail")
+                screenedCallRepo.save(
+                    ScreenedCall(
+                        phoneNumber = phoneNumber,
+                        decision = decision,
+                        timestamp = System.currentTimeMillis(),
+                        callerName = callDetails.callerDisplayName?.toString()
+                    )
+                )
                 blockCall(sendToVoicemail = true, showMissedCallNotification = true)
             }
         }
@@ -91,8 +112,8 @@ class CallScreenerService : CallScreeningService() {
             return ScreeningDecision.SEND_TO_VOICEMAIL
         }
 
-        // 4. Unknown caller — allow for now, Step 2 will answer with AI instead
-        return ScreeningDecision.ALLOW
+        // 4. Unknown caller — route to AI screener (Step 2+)
+        return ScreeningDecision.SCREENING
     }
 
     /**
@@ -108,13 +129,13 @@ class CallScreenerService : CallScreeningService() {
     // Response helpers — thin wrappers around the SDK for readability
     // ---------------------------------------------------------------------------
 
-    private fun allowCall() {
+    private fun allowCall(silenceRinger: Boolean = false) {
         respondToCall(
-            Call.Details.EXTRA_CALL_BACK_NUMBER,   // unused, just needs a non-null key
+            Call.Details.EXTRA_CALL_BACK_NUMBER,
             CallResponse.Builder()
                 .setDisallowCall(false)
                 .setRejectCall(false)
-                .setSilenceCall(false)
+                .setSilenceCall(silenceRinger)   // true for screening: we answer, not the user
                 .setSkipCallLog(false)
                 .setSkipNotification(false)
                 .build()
