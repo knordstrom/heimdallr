@@ -1,13 +1,14 @@
 package com.callscreener.data
 
 /**
- * The three outcomes a screened call can have.
- * Step 2 will add AI_ANSWERING as a transitional state.
+ * The outcomes a screened call can have.
+ * SCREENING is a transitional state while the call is being actively answered and recorded.
  */
 enum class ScreeningDecision {
     ALLOW,
     BLOCK_SILENTLY,
-    SEND_TO_VOICEMAIL
+    SEND_TO_VOICEMAIL,
+    SCREENING    // Step 2+: call is being answered by the app for AI classification
 }
 
 /**
@@ -21,5 +22,6 @@ data class ScreenedCall(
     val decision: ScreeningDecision,
     val timestamp: Long,
     val transcript: String? = null,      // populated in Step 3+ by STT
-    val aiSummary: String? = null        // populated in Step 4+ by LLM
+    val aiSummary: String? = null,       // populated in Step 4+ by LLM
+    val audioFilePath: String? = null    // Step 2+: path to recorded caller audio
 )
