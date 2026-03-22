@@ -23,6 +23,10 @@ android {
         // Step 3: Google Speech-to-Text API key (set in local.properties)
         buildConfigField "String", "GOOGLE_STT_API_KEY",
             "\"${localProps.getProperty('google.stt.api.key', '')}\""
+
+        // Step 4: Anthropic API key for Claude classification (set in local.properties)
+        buildConfigField "String", "ANTHROPIC_API_KEY",
+            "\"${localProps.getProperty('anthropic.api.key', '')}\""
     }
 
     buildTypes {

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.callscreener.BuildConfig
 import com.callscreener.data.ScreenedCallRepository
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,12 @@ class TranscriptionWorker(
 
         Log.i(TAG, "Transcript for call $callId: \"$transcript\"")
         ScreenedCallRepository(applicationContext).updateTranscript(callId, transcript)
-        Result.success()
+
+        // Pass call_id and transcript forward so ClassificationWorker can read them
+        // via WorkManager's OverwritingInputMerger when chained with .then().
+        Result.success(workDataOf(
+            KEY_CALL_ID to callId,
+            ClassificationWorker.KEY_TRANSCRIPT to transcript
+        ))
     }
 }

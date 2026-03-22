@@ -43,6 +43,17 @@ class ScreenedCallRepository(context: Context) {
         prefs.edit { putString(KEY_CALLS, serialize(calls)) }
     }
 
+    /**
+     * Updates the decision and AI summary on an existing record (Step 4).
+     * Replaces the transitional SCREENING decision with the final classification.
+     */
+    fun updateClassification(id: Long, decision: ScreeningDecision, summary: String) {
+        val calls = getAll().map {
+            if (it.id == id) it.copy(decision = decision, aiSummary = summary) else it
+        }
+        prefs.edit { putString(KEY_CALLS, serialize(calls)) }
+    }
+
     fun clear() {
         prefs.edit { remove(KEY_CALLS) }
     }
