@@ -21,7 +21,8 @@ class ScreenedCallRepository(context: Context) {
 
     fun save(call: ScreenedCall) {
         val calls = getAll().toMutableList()
-        val withId = call.copy(id = System.currentTimeMillis())
+        // Preserve caller-supplied id (e.g. from ScreeningInCallService) if non-zero.
+        val withId = if (call.id != 0L) call else call.copy(id = System.currentTimeMillis())
         calls.add(0, withId)                     // newest first
 
         val trimmed = calls.take(MAX_RECORDS)
@@ -35,6 +36,12 @@ class ScreenedCallRepository(context: Context) {
 
     fun getBlocked(): List<ScreenedCall> =
         getAll().filter { it.decision != ScreeningDecision.ALLOW }
+
+    /** Updates the transcript on an existing record identified by [id]. No-op if not found. */
+    fun updateTranscript(id: Long, transcript: String) {
+        val calls = getAll().map { if (it.id == id) it.copy(transcript = transcript) else it }
+        prefs.edit { putString(KEY_CALLS, serialize(calls)) }
+    }
 
     fun clear() {
         prefs.edit { remove(KEY_CALLS) }
