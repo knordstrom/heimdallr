@@ -29,6 +29,7 @@ class GreetingEngine(context: Context) : TextToSpeech.OnInitListener {
     private val tts = TextToSpeech(context, this)
     private var initialized = false
     private var pendingCallback: (() -> Unit)? = null
+    private var pendingText: String = GREETING_TEXT
 
     override fun onInit(status: Int) {
         if (status != TextToSpeech.SUCCESS) {
@@ -64,24 +65,26 @@ class GreetingEngine(context: Context) : TextToSpeech.OnInitListener {
         initialized = true
 
         // Play any greeting that was requested before init completed
-        pendingCallback?.let { speak(it) }
+        pendingCallback?.let { speak(pendingText, it) }
     }
 
     /**
-     * Plays the greeting, then invokes [onComplete] when the utterance finishes.
-     * Safe to call before TTS is initialized.
+     * Plays [text] (defaults to [GREETING_TEXT]), then invokes [onComplete].
+     * Safe to call before TTS is initialized — the call is queued and replayed
+     * once [onInit] fires.
      */
-    fun playGreeting(onComplete: () -> Unit) {
+    fun playGreeting(text: String = GREETING_TEXT, onComplete: () -> Unit) {
+        pendingText = text
         if (!initialized) {
             pendingCallback = onComplete
             return
         }
-        speak(onComplete)
+        speak(text, onComplete)
     }
 
-    private fun speak(onComplete: () -> Unit) {
+    private fun speak(text: String, onComplete: () -> Unit) {
         pendingCallback = onComplete
-        tts.speak(GREETING_TEXT, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
     }
 
     fun shutdown() {
