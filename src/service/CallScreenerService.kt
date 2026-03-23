@@ -1,13 +1,14 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.util.Log
-import com.callscreener.data.BlocklistRepository
-import com.callscreener.data.ScreenedCall
-import com.callscreener.data.ScreenedCallRepository
-import com.callscreener.data.ScreeningDecision
-import com.callscreener.service.ScreeningStateManager
+import com.heimdallr.data.BlocklistRepository
+import com.heimdallr.data.ScreenedCall
+import com.heimdallr.data.ScreenedCallRepository
+import com.heimdallr.data.ScreeningDecision
+import com.heimdallr.data.UserPreferencesRepository
+import com.heimdallr.service.ScreeningStateManager
 
 /**
  * CallScreenerService
@@ -26,6 +27,7 @@ class CallScreenerService : CallScreeningService() {
     // Injected in a real app via Hilt/Koin — kept simple here for clarity
     private val blocklistRepo by lazy { BlocklistRepository(applicationContext) }
     private val screenedCallRepo by lazy { ScreenedCallRepository(applicationContext) }
+    private val userPrefs by lazy { UserPreferencesRepository(applicationContext) }
 
     override fun onScreenCall(callDetails: Call.Details) {
         val handle = callDetails.handle
@@ -112,8 +114,9 @@ class CallScreenerService : CallScreeningService() {
             return ScreeningDecision.SEND_TO_VOICEMAIL
         }
 
-        // 4. Unknown caller — route to AI screener (Step 2+)
-        return ScreeningDecision.SCREENING
+        // 4. Unknown caller — route to AI screener if enabled, otherwise allow through
+        return if (userPrefs.aiScreeningEnabled) ScreeningDecision.SCREENING
+               else ScreeningDecision.ALLOW
     }
 
     /**

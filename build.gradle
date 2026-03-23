@@ -10,11 +10,11 @@ def localPropsFile = rootProject.file('local.properties')
 if (localPropsFile.exists()) localPropsFile.withReader('UTF-8') { localProps.load(it) }
 
 android {
-    namespace 'com.callscreener'
+    namespace 'com.heimdallr'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.callscreener"
+        applicationId "com.heimdallr"
         minSdk 28          // CallScreeningService requires API 28+
         targetSdk 34
         versionCode 1
@@ -52,6 +52,15 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.8'
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['src']
+        }
+        test {
+            java.srcDirs = ['test']
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.os.Handler
 import android.os.Looper
@@ -12,9 +12,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import androidx.work.ExistingWorkPolicy
-import com.callscreener.data.ScreenedCall
-import com.callscreener.data.ScreenedCallRepository
-import com.callscreener.data.ScreeningDecision
+import com.heimdallr.data.ScreenedCall
+import com.heimdallr.data.ScreenedCallRepository
+import com.heimdallr.data.ScreeningDecision
+import com.heimdallr.data.UserPreferencesRepository
 
 /**
  * InCallService that intercepts calls flagged by CallScreenerService, answers them
@@ -40,6 +41,7 @@ class ScreeningInCallService : InCallService() {
     private var greetingEngine: GreetingEngine? = null
     private var audioCaptureManager: AudioCaptureManager? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val userPrefs by lazy { UserPreferencesRepository(applicationContext) }
 
     override fun onCreate() {
         super.onCreate()
@@ -104,7 +106,8 @@ class ScreeningInCallService : InCallService() {
         ScreeningNotificationManager(applicationContext)
             .showScreeningInProgress(number, callId)
 
-        greetingEngine?.playGreeting {
+        val greetingText = userPrefs.customGreeting
+        greetingEngine?.playGreeting(greetingText) {
             // Greeting finished — caller is now speaking.
             // Enforce a hard cap; Step 4 will terminate sooner once it classifies.
             mainHandler.postDelayed({

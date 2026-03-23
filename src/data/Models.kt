@@ -1,4 +1,4 @@
-package com.callscreener.data
+package com.heimdallr.data
 
 /**
  * The outcomes a screened call can have.

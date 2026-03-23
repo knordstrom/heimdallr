@@ -1,11 +1,11 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
-import com.callscreener.data.BlocklistRepository
+import com.heimdallr.data.BlocklistRepository
 
 /**
  * Handles notification action buttons tapped by the user.
@@ -18,7 +18,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "NotificationActionReceiver"
-        const val ACTION_BLOCK = "com.callscreener.action.BLOCK"
+        const val ACTION_BLOCK = "com.heimdallr.action.BLOCK"
         const val EXTRA_PHONE_NUMBER = "phone_number"
         const val EXTRA_NOTIFICATION_ID = "notification_id"
     }
