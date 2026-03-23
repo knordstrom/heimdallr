@@ -1,4 +1,90 @@
 plugins {
-    id 'com.android.application' version '8.2.2' apply false
-    id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// Pull API keys from local.properties so they are never checked into source control.
+// Add  google.stt.api.key=YOUR_KEY  to local.properties before building Step 3.
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) localPropsFile.withReader('UTF-8') { localProps.load(it) }
+
+android {
+    namespace 'com.heimdallr'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.heimdallr"
+        minSdk 28          // CallScreeningService requires API 28+
+        targetSdk 34
+        versionCode 1
+        versionName "0.1.0"
+
+        // Step 3: Google Speech-to-Text API key (set in local.properties)
+        buildConfigField "String", "GOOGLE_STT_API_KEY",
+            "\"${localProps.getProperty('google.stt.api.key', '')}\""
+
+        // Step 4: Anthropic API key for Claude classification (set in local.properties)
+        buildConfigField "String", "ANTHROPIC_API_KEY",
+            "\"${localProps.getProperty('anthropic.api.key', '')}\""
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildFeatures {
+        compose true          // ready for Compose UI in later steps
+        buildConfig true      // exposes BuildConfig fields (API keys)
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.8'
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['src']
+        }
+        test {
+            java.srcDirs = ['test']
+        }
+    }
+}
+
+dependencies {
+    // Core
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    // Lifecycle
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+
+    // Compose (UI built in later steps)
+    implementation platform('androidx.compose:compose-bom:2024.02.00')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.activity:activity-compose:1.8.2'
+
+    // Coroutines (used in Step 2+ for async STT/LLM calls)
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+
+    // Step 3: WorkManager for reliable background STT transcription
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
 }

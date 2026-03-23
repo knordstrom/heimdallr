@@ -20,6 +20,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Clean build
 ./gradlew clean assembleDebug
 ```
+## Project
+Android call screener app. Kotlin + Jetpack Compose.
+Screens spam and cold sales calls using CallScreeningService + LLM.
 
 ## Architecture
 
@@ -43,13 +46,17 @@ Heimdallr is an Android call screening app (Kotlin, min SDK 28) that hooks into 
 
 **Permissions:** The service requires `BIND_SCREENING_SERVICE` (enforced by the system) plus `READ_CALL_LOG` and `READ_PHONE_STATE` as runtime permissions.
 
-## Multi-Phase Roadmap
+## Build steps completed
+- [x] Step 1: CallScreeningService + blocklist
+- [x] Step 2: InCallService + TTS greeting + audio capture
+- [x] Step 3: STT transcription (Google Speech-to-Text)
+- [x] Step 4: Claude API classification (claude-opus-4-6)
+- [x] Step 5: User notification + call history UI (Compose)
+- [x] Step 6: User preferences for LLM context
 
-The codebase is explicitly structured around phases:
-- **Step 1 (current):** Blocklist-only filtering
-- **Step 2:** AI audio answering + LLM classification at the callout point in `screenNumber()`
-- **Step 3:** STT transcript generation (field reserved in `ScreenedCall`)
-- **Step 4:** LLM summarization (field reserved in `ScreenedCall`)
-- **Later:** Room DB migration, Compose UI for call history and settings
+## Key files
+- service/CallScreenerService.kt — main screening logic
+- data/BlocklistRepository.kt — hard/soft blocklists
+- data/ScreenedCallRepository.kt — call history log
 
 Compose is already enabled in `build.gradle` and dependencies are included in anticipation of future UI work.
