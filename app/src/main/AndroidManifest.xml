@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.callscreener">
+
+    <!-- =========================================================
+         Permissions
+         ========================================================= -->
+
+    <!--
+        Required for CallScreeningService to be invoked by Android.
+        The user must also designate this app as the call screener
+        via TelecomManager.requestChangeDefaultCallScreeningApp() —
+        handled in onboarding (see OnboardingActivity).
+    -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
+    <!--
+        Lets us read the caller's number inside onScreenCall().
+        Declared here; runtime-requested in onboarding.
+    -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!--
+        Required for BOOT_COMPLETED receiver.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        Step 2+: needed for foreground service when audio answering is added.
+        Declared now so the manifest is ready; not used in Step 1.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <!-- =========================================================
+         Application
+         ========================================================= -->
+
+    <application
+        android:name=".CallScreenerApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CallScreener">
+
+        <!-- =====================================================
+             CallScreeningService
+             The core service. Android binds to this when a call
+             arrives. The BIND_SCREENING_SERVICE permission ensures
+             only the system can bind to it.
+             ===================================================== -->
+        <service
+            android:name=".service.CallScreenerService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.telecom"
+                android:resource="@xml/call_screening_service" />
+        </service>
+
+        <!-- =====================================================
+             BootReceiver
+             ===================================================== -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- =====================================================
+             Activities (stubs — to be implemented in later steps)
+             ===================================================== -->
+
+        <!-- Entry point: asks user to set this app as the call screener -->
+        <activity
+            android:name=".ui.OnboardingActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Main screen: blocked call history + blocklist management -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="false" />
+
+        <!-- Linked from call_screening_service.xml — required by telecom -->
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="true" />
+
+    </application>
+
+</manifest>
