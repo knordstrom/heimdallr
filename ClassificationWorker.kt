@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.callscreener.BuildConfig
 import com.callscreener.data.ScreenedCallRepository
+import com.callscreener.data.UserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -56,8 +57,14 @@ class ClassificationWorker(
 
         Log.i(TAG, "Classifying call $callId: \"${transcript.take(80)}…\"")
 
+        val userPrefs = UserPreferencesRepository(applicationContext)
+        val config = ClassificationConfig(
+            strictness = userPrefs.strictness,
+            userContext = userPrefs.userContext
+        )
+
         val result = try {
-            ClaudeClassificationClient().classify(transcript, apiKey)
+            ClaudeClassificationClient().classify(transcript, apiKey, config)
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error during classification: ${e.message}")
             return@withContext Result.retry()

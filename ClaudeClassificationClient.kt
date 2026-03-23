@@ -1,6 +1,7 @@
 package com.callscreener.service
 
 import android.util.Log
+import com.callscreener.data.Strictness
 import com.callscreener.data.ScreeningDecision
 import org.json.JSONArray
 import org.json.JSONObject
@@ -11,6 +12,15 @@ import java.net.URL
 data class ClassificationResult(
     val decision: ScreeningDecision,
     val summary: String
+)
+
+/**
+ * User-configurable parameters forwarded to ClaudeClassificationClient.
+ * Read from UserPreferencesRepository by ClassificationWorker at job-run time.
+ */
+data class ClassificationConfig(
+    val strictness: Strictness = Strictness.BALANCED,
+    val userContext: String = ""
 )
 
 /**
@@ -36,29 +46,18 @@ class ClaudeClassificationClient {
         private const val MODEL = "claude-opus-4-6"
         private const val MAX_TOKENS = 1024
         private const val TIMEOUT_MS = 30_000
-
-        private val SYSTEM_PROMPT = """
-            You are a call screening assistant for a mobile phone app.
-            Classify an incoming phone call based on the caller's spoken response to the greeting
-            "Please say your name and the reason for your call."
-
-            Classify the call as exactly one of:
-            - ALLOW: A legitimate caller with a genuine reason to speak with the phone owner
-              (friend, family, colleague, scheduled appointment, relevant business inquiry).
-            - SEND_TO_VOICEMAIL: A solicitor, telemarketer, or unwanted but non-threatening
-              caller who could reasonably leave a voicemail.
-            - BLOCK_SILENTLY: A spammer, scammer, robocall, or potential fraudster.
-
-            Respond with ONLY a JSON object — no preamble, no markdown fences:
-            {"decision": "<ALLOW|SEND_TO_VOICEMAIL|BLOCK_SILENTLY>", "summary": "<one sentence>"}
-        """.trimIndent()
     }
 
     /**
-     * Classifies [transcript] and returns a [ClassificationResult], or null on failure.
+     * Classifies [transcript] using [config] to shape the system prompt.
+     * Returns a [ClassificationResult], or null on failure.
      */
-    fun classify(transcript: String, apiKey: String): ClassificationResult? {
-        val body = buildRequestBody(transcript)
+    fun classify(
+        transcript: String,
+        apiKey: String,
+        config: ClassificationConfig = ClassificationConfig()
+    ): ClassificationResult? {
+        val body = buildRequestBody(transcript, config)
 
         return try {
             val responseJson = post(body, apiKey)
@@ -74,17 +73,54 @@ class ClaudeClassificationClient {
     // Request building
     // ---------------------------------------------------------------------------
 
-    private fun buildRequestBody(transcript: String) = JSONObject().apply {
-        put("model", MODEL)
-        put("max_tokens", MAX_TOKENS)
-        put("system", SYSTEM_PROMPT)
-        put("messages", JSONArray().apply {
-            put(JSONObject().apply {
-                put("role", "user")
-                put("content", "Caller said: \"${transcript.replace("\"", "\\\"")}\"")
+    private fun buildRequestBody(transcript: String, config: ClassificationConfig) =
+        JSONObject().apply {
+            put("model", MODEL)
+            put("max_tokens", MAX_TOKENS)
+            put("system", buildSystemPrompt(config))
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", "Caller said: \"${transcript.replace("\"", "\\\"")}\"")
+                })
             })
-        })
-    }.toString()
+        }.toString()
+
+    private fun buildSystemPrompt(config: ClassificationConfig): String {
+        val contextSection = if (config.userContext.isNotBlank())
+            "\nContext about the phone's owner: ${config.userContext}\n"
+        else ""
+
+        val strictnessInstruction = when (config.strictness) {
+            Strictness.LENIENT ->
+                "Default to ALLOW when uncertain. " +
+                "Only use BLOCK_SILENTLY for clear robocalls or scams."
+            Strictness.BALANCED ->
+                "Use your best judgment. Route likely solicitors to voicemail; " +
+                "block clear spam and scams."
+            Strictness.STRICT ->
+                "Default to SEND_TO_VOICEMAIL or BLOCK_SILENTLY when uncertain. " +
+                "Only ALLOW if the caller's purpose is clearly legitimate."
+        }
+
+        return """
+            You are a call screening assistant for a mobile phone app.
+            Classify an incoming phone call based on the caller's spoken response to the greeting
+            "Please say your name and the reason for your call."
+            $contextSection
+            Classify the call as exactly one of:
+            - ALLOW: A legitimate caller with a genuine reason to speak with the phone owner
+              (friend, family, colleague, scheduled appointment, relevant business inquiry).
+            - SEND_TO_VOICEMAIL: A solicitor, telemarketer, or unwanted but non-threatening
+              caller who could reasonably leave a voicemail.
+            - BLOCK_SILENTLY: A spammer, scammer, robocall, or potential fraudster.
+
+            $strictnessInstruction
+
+            Respond with ONLY a JSON object — no preamble, no markdown fences:
+            {"decision": "<ALLOW|SEND_TO_VOICEMAIL|BLOCK_SILENTLY>", "summary": "<one sentence>"}
+        """.trimIndent()
+    }
 
     // ---------------------------------------------------------------------------
     // HTTP
