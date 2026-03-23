@@ -69,9 +69,17 @@ class ClassificationWorker(
         }
 
         Log.i(TAG, "Call $callId classified as ${result.decision}: \"${result.summary}\"")
-        ScreenedCallRepository(applicationContext).updateClassification(
-            callId, result.decision, result.summary
-        )
+
+        val repo = ScreenedCallRepository(applicationContext)
+        repo.updateClassification(callId, result.decision, result.summary)
+
+        // Show result notification — replaces the "screening in progress" notification
+        // that ScreeningInCallService posted while the call was active.
+        repo.getById(callId)?.let { updatedCall ->
+            ScreeningNotificationManager(applicationContext)
+                .showClassificationResult(updatedCall)
+        }
+
         Result.success()
     }
 }

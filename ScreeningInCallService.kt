@@ -101,6 +101,9 @@ class ScreeningInCallService : InCallService() {
         val callId = System.currentTimeMillis()
         val audioPath = audioCaptureManager?.startRecording(callId)
 
+        ScreeningNotificationManager(applicationContext)
+            .showScreeningInProgress(number, callId)
+
         greetingEngine?.playGreeting {
             // Greeting finished — caller is now speaking.
             // Enforce a hard cap; Step 4 will terminate sooner once it classifies.
@@ -126,6 +129,9 @@ class ScreeningInCallService : InCallService() {
 
         if (audioPath != null) {
             enqueueTranscription(callId, audioPath)
+        } else {
+            // No audio to transcribe — cancel the in-progress notification now.
+            ScreeningNotificationManager(applicationContext).cancel(callId)
         }
 
         Log.i(TAG, "Screening complete for $number — audio: $audioPath — disconnecting")
