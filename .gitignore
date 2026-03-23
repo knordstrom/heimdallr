@@ -1,0 +1,18 @@
+# Build outputs
+build/
+app/build/
+
+# Gradle caches
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Local machine config (contains absolute SDK path)
+local.properties
+
+# Android Studio / IDE
+*.iml
+.idea/
+.DS_Store
+
+# Claude Code
+.claude/
