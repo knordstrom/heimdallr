@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.callscreener'
+    namespace 'com.heimdallr'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.callscreener"
+        applicationId "com.heimdallr"
         minSdk 28          // CallScreeningService requires API 28+
         targetSdk 34
         versionCode 1

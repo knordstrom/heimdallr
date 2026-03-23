@@ -1,12 +1,12 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.util.Log
-import com.callscreener.data.BlocklistRepository
-import com.callscreener.data.ScreenedCall
-import com.callscreener.data.ScreenedCallRepository
-import com.callscreener.data.ScreeningDecision
+import com.heimdallr.data.BlocklistRepository
+import com.heimdallr.data.ScreenedCall
+import com.heimdallr.data.ScreenedCallRepository
+import com.heimdallr.data.ScreeningDecision
 
 /**
  * CallScreenerService

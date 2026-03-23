@@ -1,4 +1,4 @@
-package com.callscreener.ui
+package com.heimdallr.ui
 
 import android.app.role.RoleManager
 import android.content.Intent

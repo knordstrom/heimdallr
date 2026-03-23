@@ -1,4 +1,4 @@
-package com.callscreener.ui
+package com.heimdallr.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
