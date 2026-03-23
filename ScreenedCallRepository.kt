@@ -37,6 +37,8 @@ class ScreenedCallRepository(context: Context) {
     fun getBlocked(): List<ScreenedCall> =
         getAll().filter { it.decision != ScreeningDecision.ALLOW }
 
+    fun getById(id: Long): ScreenedCall? = getAll().firstOrNull { it.id == id }
+
     /** Updates the transcript on an existing record identified by [id]. No-op if not found. */
     fun updateTranscript(id: Long, transcript: String) {
         val calls = getAll().map { if (it.id == id) it.copy(transcript = transcript) else it }
