@@ -12,6 +12,13 @@
         via TelecomManager.requestChangeDefaultCallScreeningApp() —
         handled in onboarding (see OnboardingActivity).
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Step 5: Show call screening result notifications.
+        Runtime-requested in MainActivity on API 33+; silently skipped if denied.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
 
     <!--
@@ -86,6 +93,19 @@
                 android:name="android.telecom.IN_CALL_SERVICE_UI"
                 android:value="false" />
         </service>
+
+        <!-- =====================================================
+             NotificationActionReceiver (Step 5)
+             Handles "Block number" taps from screening result notifications.
+             exported=false: only this app can send these intents (setPackage guard).
+             ===================================================== -->
+        <receiver
+            android:name=".service.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.callscreener.action.BLOCK" />
+            </intent-filter>
+        </receiver>
 
         <!-- =====================================================
              BootReceiver

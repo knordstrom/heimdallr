@@ -3,6 +3,12 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Pull API keys from local.properties so they are never checked into source control.
+// Add  google.stt.api.key=YOUR_KEY  to local.properties before building Step 3.
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) localPropsFile.withReader('UTF-8') { localProps.load(it) }
+
 android {
     namespace 'com.callscreener'
     compileSdk 34
@@ -13,6 +19,14 @@ android {
         targetSdk 34
         versionCode 1
         versionName "0.1.0"
+
+        // Step 3: Google Speech-to-Text API key (set in local.properties)
+        buildConfigField "String", "GOOGLE_STT_API_KEY",
+            "\"${localProps.getProperty('google.stt.api.key', '')}\""
+
+        // Step 4: Anthropic API key for Claude classification (set in local.properties)
+        buildConfigField "String", "ANTHROPIC_API_KEY",
+            "\"${localProps.getProperty('anthropic.api.key', '')}\""
     }
 
     buildTypes {
@@ -33,6 +47,7 @@ android {
 
     buildFeatures {
         compose true          // ready for Compose UI in later steps
+        buildConfig true      // exposes BuildConfig fields (API keys)
     }
 
     composeOptions {
@@ -56,6 +71,9 @@ dependencies {
 
     // Coroutines (used in Step 2+ for async STT/LLM calls)
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+
+    // Step 3: WorkManager for reliable background STT transcription
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'

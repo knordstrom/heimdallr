@@ -6,6 +6,12 @@ import android.telecom.Call
 import android.telecom.InCallService
 import android.telecom.VideoProfile
 import android.util.Log
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import androidx.work.ExistingWorkPolicy
 import com.callscreener.data.ScreenedCall
 import com.callscreener.data.ScreenedCallRepository
 import com.callscreener.data.ScreeningDecision
@@ -95,6 +101,9 @@ class ScreeningInCallService : InCallService() {
         val callId = System.currentTimeMillis()
         val audioPath = audioCaptureManager?.startRecording(callId)
 
+        ScreeningNotificationManager(applicationContext)
+            .showScreeningInProgress(number, callId)
+
         greetingEngine?.playGreeting {
             // Greeting finished — caller is now speaking.
             // Enforce a hard cap; Step 4 will terminate sooner once it classifies.
@@ -107,18 +116,52 @@ class ScreeningInCallService : InCallService() {
     private fun finishScreening(call: Call, number: String, callId: Long, audioPath: String?) {
         audioCaptureManager?.stopRecording()
 
-        ScreenedCallRepository(applicationContext).save(
-            ScreenedCall(
-                phoneNumber = number,
-                callerName = null,          // no display name available at this point
-                decision = ScreeningDecision.SCREENING,
-                timestamp = callId,
-                audioFilePath = audioPath
-                // transcript and aiSummary filled in by Steps 3 and 4
-            )
+        val record = ScreenedCall(
+            id = callId,                // stable id used by TranscriptionWorker to update this record
+            phoneNumber = number,
+            callerName = null,          // no display name available at this point
+            decision = ScreeningDecision.SCREENING,
+            timestamp = callId,
+            audioFilePath = audioPath
+            // transcript set by TranscriptionWorker (Step 3); aiSummary by Step 4
         )
+        ScreenedCallRepository(applicationContext).save(record)
+
+        if (audioPath != null) {
+            enqueueTranscription(callId, audioPath)
+        } else {
+            // No audio to transcribe — cancel the in-progress notification now.
+            ScreeningNotificationManager(applicationContext).cancel(callId)
+        }
 
         Log.i(TAG, "Screening complete for $number — audio: $audioPath — disconnecting")
         call.disconnect()
+    }
+
+    private fun enqueueTranscription(callId: Long, audioPath: String) {
+        val networkRequired = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val transcriptionWork = OneTimeWorkRequestBuilder<TranscriptionWorker>()
+            .setInputData(workDataOf(
+                TranscriptionWorker.KEY_AUDIO_PATH to audioPath,
+                TranscriptionWorker.KEY_CALL_ID to callId
+            ))
+            .setConstraints(networkRequired)
+            .build()
+
+        // ClassificationWorker receives call_id + transcript from TranscriptionWorker's
+        // output data via WorkManager's OverwritingInputMerger.
+        val classificationWork = OneTimeWorkRequestBuilder<ClassificationWorker>()
+            .setConstraints(networkRequired)
+            .build()
+
+        WorkManager.getInstance(applicationContext)
+            .beginUniqueWork("screening_$callId", ExistingWorkPolicy.KEEP, transcriptionWork)
+            .then(classificationWork)
+            .enqueue()
+
+        Log.d(TAG, "STT → Classification pipeline enqueued for call $callId")
     }
 }

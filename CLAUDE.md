@@ -49,9 +49,9 @@ Heimdallr is an Android call screening app (Kotlin, min SDK 28) that hooks into 
 ## Build steps completed
 - [x] Step 1: CallScreeningService + blocklist
 - [x] Step 2: InCallService + TTS greeting + audio capture
-- [ ] Step 3: STT transcription (Google Speech-to-Text / Whisper)
-- [ ] Step 4: Claude API classification
-- [ ] Step 5: User notification + accept/dismiss UI
+- [x] Step 3: STT transcription (Google Speech-to-Text)
+- [x] Step 4: Claude API classification (claude-opus-4-6)
+- [x] Step 5: User notification + call history UI (Compose)
 - [ ] Step 6: User preferences for LLM context
 
 ## Key files
