@@ -1,4 +1,4 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,9 +10,9 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.callscreener.data.ScreenedCall
-import com.callscreener.data.ScreeningDecision
-import com.callscreener.ui.MainActivity
+import com.heimdallr.data.ScreenedCall
+import com.heimdallr.data.ScreeningDecision
+import com.heimdallr.ui.MainActivity
 
 /**
  * Manages the two notifications shown during a screening session:

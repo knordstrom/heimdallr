@@ -1,4 +1,4 @@
-package com.callscreener.ui
+package com.heimdallr.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,9 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.callscreener.data.Strictness
-import com.callscreener.data.UserPreferencesRepository
-import com.callscreener.service.GreetingEngine
+import com.heimdallr.data.Strictness
+import com.heimdallr.data.UserPreferencesRepository
+import com.heimdallr.service.GreetingEngine
 
 /**
  * Settings screen — lets the user configure how the LLM screens calls.

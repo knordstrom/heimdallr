@@ -1,7 +1,7 @@
-package com.callscreener
+package com.heimdallr
 
 import android.app.Application
-import com.callscreener.service.ScreeningNotificationManager
+import com.heimdallr.service.ScreeningNotificationManager
 
 /**
  * Application subclass — creates the notification channel at startup so it's

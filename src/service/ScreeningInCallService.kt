@@ -1,4 +1,4 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.os.Handler
 import android.os.Looper
@@ -12,10 +12,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import androidx.work.ExistingWorkPolicy
-import com.callscreener.data.ScreenedCall
-import com.callscreener.data.ScreenedCallRepository
-import com.callscreener.data.ScreeningDecision
-import com.callscreener.data.UserPreferencesRepository
+import com.heimdallr.data.ScreenedCall
+import com.heimdallr.data.ScreenedCallRepository
+import com.heimdallr.data.ScreeningDecision
+import com.heimdallr.data.UserPreferencesRepository
 
 /**
  * InCallService that intercepts calls flagged by CallScreenerService, answers them

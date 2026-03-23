@@ -1,4 +1,4 @@
-package com.callscreener.ui
+package com.heimdallr.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -20,9 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.callscreener.data.ScreenedCall
-import com.callscreener.data.ScreenedCallRepository
-import com.callscreener.data.ScreeningDecision
+import com.heimdallr.data.ScreenedCall
+import com.heimdallr.data.ScreenedCallRepository
+import com.heimdallr.data.ScreeningDecision
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

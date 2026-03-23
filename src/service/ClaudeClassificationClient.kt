@@ -1,8 +1,8 @@
-package com.callscreener.service
+package com.heimdallr.service
 
 import android.util.Log
-import com.callscreener.data.Strictness
-import com.callscreener.data.ScreeningDecision
+import com.heimdallr.data.Strictness
+import com.heimdallr.data.ScreeningDecision
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
