@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.callscreener">
+    package="com.heimdallr">
 
     <!-- =========================================================
          Permissions
@@ -103,7 +103,7 @@
             android:name=".service.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.callscreener.action.BLOCK" />
+                <action android:name="com.heimdallr.action.BLOCK" />
             </intent-filter>
         </receiver>
 
